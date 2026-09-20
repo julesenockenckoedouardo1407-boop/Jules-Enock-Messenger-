@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#16834b">
+  <meta name="description" content="Jules Enock Messenger - messagerie simple et moderne">
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" href="icon-192.png">
+  <title>Jules Enock Messenger</title>
+  <style>
+    *{box-sizing:border-box}body{margin:0;font-family:Arial,sans-serif;background:#f3f7f4;color:#173b2a}
+    button,input{font:inherit}.app{max-width:520px;margin:auto;min-height:100vh;background:#fff;box-shadow:0 0 25px #0001}
+    .top{background:#16834b;color:#fff;padding:18px 18px 14px;position:sticky;top:0;z-index:5}
+    .brand{font-size:21px;font-weight:700}.sub{font-size:12px;opacity:.85;margin-top:3px}
+    .screen{padding:16px}.welcome{text-align:center;padding:45px 20px}.logo{width:82px;height:82px;margin:auto;border-radius:24px;background:#16834b;color:#fff;display:grid;place-items:center;font-size:40px;box-shadow:0 8px 20px #16834b33}
+    h1{font-size:25px;margin:18px 0 8px}.muted{color:#6a7d73;font-size:14px}
+    .btn{width:100%;border:0;border-radius:13px;padding:14px;margin-top:10px;background:#16834b;color:#fff;font-weight:700}.btn.alt{background:#eef5f0;color:#16834b}
+    .hidden{display:none!important}.field{margin:10px 0}.field label{display:block;font-size:13px;font-weight:700;margin-bottom:6px}.field input{width:100%;padding:13px;border:1px solid #d8e4dc;border-radius:12px;outline:none}.field input:focus{border-color:#16834b}
+    .row{display:flex;gap:10px;align-items:center}.search{margin:12px 0}.search input{width:100%;padding:12px;border:1px solid #dce8e0;border-radius:12px}
+    .chat{display:flex;align-items:center;gap:12px;padding:13px 4px;border-bottom:1px solid #edf2ee;cursor:pointer}.avatar{width:48px;height:48px;border-radius:50%;background:#dcefe4;color:#16834b;display:grid;place-items:center;font-weight:700}
+    .chat .info{flex:1}.name{font-weight:700}.last{font-size:13px;color:#718078;margin-top:4px}.time{font-size:11px;color:#8a9991}
+    .nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:min(520px,100%);display:flex;background:#fff;border-top:1px solid #e5ece7;padding:8px 4px;z-index:10}.nav button{flex:1;border:0;background:none;color:#728078;font-size:12px;padding:8px}.nav button.active{color:#16834b;font-weight:700}
+    .conversation{height:calc(100vh - 125px);overflow:auto;padding:14px 12px 90px;background:#f5f8f6}.bubble{max-width:78%;padding:10px 13px;border-radius:16px;margin:7px 0;line-height:1.35;font-size:14px}.mine{margin-left:auto;background:#16834b;color:white;border-bottom-right-radius:5px}.theirs{background:#fff;border:1px solid #e3ebe6;border-bottom-left-radius:5px}
+    .composer{position:fixed;bottom:62px;left:50%;transform:translateX(-50%);width:min(520px,100%);background:#fff;padding:8px;display:flex;gap:7px;border-top:1px solid #e5ece7}.composer input{flex:1;border:1px solid #dce7e0;border-radius:22px;padding:10px 14px}.send{width:48px;border:0;border-radius:50%;background:#16834b;color:#fff}
+    .back{border:0;background:none;color:#fff;font-size:18px;margin-right:8px}.profile{padding:25px;text-align:center}.bigavatar{width:90px;height:90px;margin:auto;border-radius:50%;background:#dcefe4;color:#16834b;display:grid;place-items:center;font-size:32px;font-weight:700}
+  </style>
+</head>
+<body>
+<div class="app">
+  <section id="auth" class="screen">
+    <div class="welcome">
+      <div class="logo">💬</div>
+      <h1>Jules Enock Messenger</h1>
+      <p class="muted">Une messagerie simple, rapide et moderne.</p>
+      <div id="loginBox">
+        <div class="field"><label>Téléphone ou e-mail</label><input id="loginId" placeholder="Votre identifiant"></div>
+        <div class="field"><label>Mot de passe</label><input id="loginPass" type="password" placeholder="Mot de passe"></div>
+        <button class="btn" onclick="login()">Se connecter</button>
+        <button class="btn alt" onclick="showRegister()">Créer un compte</button>
+      </div>
+      <div id="registerBox" class="hidden">
+        <div class="field"><label>Prénom</label><input id="first" placeholder="Prénom"></div>
+        <div class="field"><label>Nom</label><input id="last" placeholder="Nom"></div>
+        <div class="field"><label>Téléphone</label><input id="phone" placeholder="+509 ..."></div>
+        <div class="field"><label>Mot de passe</label><input id="pass" type="password" placeholder="Mot de passe"></div>
+        <button class="btn" onclick="register()">Créer mon compte</button>
+        <button class="btn alt" onclick="showLogin()">J'ai déjà un compte</button>
+      </div>
+    </div>
+  </section>
+
+  <section id="home" class="hidden">
+    <header class="top"><div class="brand">💬 Jules Enock Messenger</div><div class="sub">Vos conversations</div></header>
+    <main class="screen">
+      <div class="search"><input id="search" placeholder="🔍 Rechercher une conversation" oninput="renderChats()"></div>
+      <div id="chatList"></div>
+    </main>
+    <nav class="nav"><button class="active">💬<br>Messages</button><button onclick="profile()">👤<br>Profil</button><button onclick="logout()">↪<br>Quitter</button></nav>
+  </section>
+
+  <section id="chatView" class="hidden">
+    <header class="top"><div class="row"><button class="back" onclick="closeChat()">‹</button><div><div id="chatName" class="brand"></div><div class="sub">Conversation</div></div></div></header>
+    <div id="messages" class="conversation"></div>
+    <div class="composer"><input id="messageInput" placeholder="Écrire un message..." onkeydown="if(event.key==='Enter')sendMessage()"><button class="send" onclick="sendMessage()">➤</button></div>
+  </section>
+
+  <section id="profileView" class="hidden">
+    <header class="top"><div class="brand">Mon profil</div></header>
+    <div class="profile"><div id="bigAvatar" class="bigavatar"></div><h2 id="profileName"></h2><p id="profilePhone" class="muted"></p><button class="btn alt" onclick="closeProfile()">Retour aux messages</button></div>
+  </section>
+</div>
+
+<script>
+const demoChats=[
+ {id:1,name:"Marie",last:"Bonjour ! Comment vas-tu ?",time:"10:24",msgs:[["Bonjour ! Comment vas-tu ?","theirs"],["Je vais bien, merci !","mine"]]},
+ {id:2,name:"Jean",last:"À bientôt.",time:"Hier",msgs:[["Salut Jules 👋","theirs"],["Salut Jean !","mine"],["À bientôt.","theirs"]]},
+ {id:3,name:"Groupe IMDS",last:"Bienvenue dans le groupe.",time:"Lun",msgs:[["Bienvenue dans le groupe IMDS.","theirs"]]}
+];
+let current=null;
+function $(id){return document.getElementById(id)}
+function show(id){["auth","home","chatView","profileView"].forEach(x=>$(x).classList.add("hidden"));$(id).classList.remove("hidden")}
+function showRegister(){$("loginBox").classList.add("hidden");$("registerBox").classList.remove("hidden")}
+function showLogin(){$("registerBox").classList.add("hidden");$("loginBox").classList.remove("hidden")}
+function register(){
+ const first=$("first").value.trim(),last=$("last").value.trim(),phone=$("phone").value.trim(),pass=$("pass").value;
+ if(!first||!last||!phone||!pass){alert("Remplissez tous les champs.");return}
+ const user={first,last,phone,pass};localStorage.setItem("jem_user",JSON.stringify(user));localStorage.setItem("jem_session","1");openApp();
+}
+function login(){
+ const user=JSON.parse(localStorage.getItem("jem_user")||"null");
+ if(!user){alert("Aucun compte local. Créez d'abord un compte.");return}
+ if($("loginId").value.trim()!==user.phone || $("loginPass").value!==user.pass){alert("Identifiant ou mot de passe incorrect.");return}
+ localStorage.setItem("jem_session","1");openApp();
+}
+function openApp(){show("home");renderChats()}
+function logout(){localStorage.removeItem("jem_session");show("auth");showLogin()}
+function renderChats(){
+ const q=($("search").value||"").toLowerCase();$("chatList").innerHTML="";
+ demoChats.filter(c=>c.name.toLowerCase().includes(q)||c.last.toLowerCase().includes(q)).forEach(c=>{
+  const d=document.createElement("div");d.className="chat";d.onclick=()=>openChat(c.id);
+  d.innerHTML='<div class="avatar">'+c.name[0]+'</div><div class="info"><div class="name">'+c.name+'</div><div class="last">'+c.last+'</div></div><div class="time">'+c.time+'</div>';$("chatList").appendChild(d);
+ });
+}
+function openChat(id){current=demoChats.find(c=>c.id===id);$("chatName").textContent=current.name;renderMessages();show("chatView")}
+function renderMessages(){const box=$("messages");box.innerHTML="";current.msgs.forEach(m=>{const d=document.createElement("div");d.className="bubble "+m[1];d.textContent=m[0];box.appendChild(d)});box.scrollTop=box.scrollHeight}
+function sendMessage(){const i=$("messageInput"),t=i.value.trim();if(!t)return;current.msgs.push([t,"mine"]);current.last=t;current.time="Maintenant";i.value="";renderMessages()}
+function closeChat(){show("home");renderChats()}
+function profile(){const u=JSON.parse(localStorage.getItem("jem_user")||"{}");$("profileName").textContent=(u.first||"")+" "+(u.last||"");$("profilePhone").textContent=u.phone||"";$("bigAvatar").textContent=(u.first||"J")[0];show("profileView")}
+function closeProfile(){show("home")}
+if(localStorage.getItem("jem_session"))openApp();
+</script>
+</body>
+</html>
