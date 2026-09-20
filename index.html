@@ -1,114 +1,22 @@
-<!doctype html>
-<html lang="fr">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-  <meta name="theme-color" content="#16834b">
-  <meta name="description" content="Jules Enock Messenger - messagerie simple et moderne">
-  <link rel="manifest" href="manifest.json">
-  <link rel="icon" href="icon-192.png">
-  <title>Jules Enock Messenger</title>
-  <style>
-    *{box-sizing:border-box}body{margin:0;font-family:Arial,sans-serif;background:#f3f7f4;color:#173b2a}
-    button,input{font:inherit}.app{max-width:520px;margin:auto;min-height:100vh;background:#fff;box-shadow:0 0 25px #0001}
-    .top{background:#16834b;color:#fff;padding:18px 18px 14px;position:sticky;top:0;z-index:5}
-    .brand{font-size:21px;font-weight:700}.sub{font-size:12px;opacity:.85;margin-top:3px}
-    .screen{padding:16px}.welcome{text-align:center;padding:45px 20px}.logo{width:82px;height:82px;margin:auto;border-radius:24px;background:#16834b;color:#fff;display:grid;place-items:center;font-size:40px;box-shadow:0 8px 20px #16834b33}
-    h1{font-size:25px;margin:18px 0 8px}.muted{color:#6a7d73;font-size:14px}
-    .btn{width:100%;border:0;border-radius:13px;padding:14px;margin-top:10px;background:#16834b;color:#fff;font-weight:700}.btn.alt{background:#eef5f0;color:#16834b}
-    .hidden{display:none!important}.field{margin:10px 0}.field label{display:block;font-size:13px;font-weight:700;margin-bottom:6px}.field input{width:100%;padding:13px;border:1px solid #d8e4dc;border-radius:12px;outline:none}.field input:focus{border-color:#16834b}
-    .row{display:flex;gap:10px;align-items:center}.search{margin:12px 0}.search input{width:100%;padding:12px;border:1px solid #dce8e0;border-radius:12px}
-    .chat{display:flex;align-items:center;gap:12px;padding:13px 4px;border-bottom:1px solid #edf2ee;cursor:pointer}.avatar{width:48px;height:48px;border-radius:50%;background:#dcefe4;color:#16834b;display:grid;place-items:center;font-weight:700}
-    .chat .info{flex:1}.name{font-weight:700}.last{font-size:13px;color:#718078;margin-top:4px}.time{font-size:11px;color:#8a9991}
-    .nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:min(520px,100%);display:flex;background:#fff;border-top:1px solid #e5ece7;padding:8px 4px;z-index:10}.nav button{flex:1;border:0;background:none;color:#728078;font-size:12px;padding:8px}.nav button.active{color:#16834b;font-weight:700}
-    .conversation{height:calc(100vh - 125px);overflow:auto;padding:14px 12px 90px;background:#f5f8f6}.bubble{max-width:78%;padding:10px 13px;border-radius:16px;margin:7px 0;line-height:1.35;font-size:14px}.mine{margin-left:auto;background:#16834b;color:white;border-bottom-right-radius:5px}.theirs{background:#fff;border:1px solid #e3ebe6;border-bottom-left-radius:5px}
-    .composer{position:fixed;bottom:62px;left:50%;transform:translateX(-50%);width:min(520px,100%);background:#fff;padding:8px;display:flex;gap:7px;border-top:1px solid #e5ece7}.composer input{flex:1;border:1px solid #dce7e0;border-radius:22px;padding:10px 14px}.send{width:48px;border:0;border-radius:50%;background:#16834b;color:#fff}
-    .back{border:0;background:none;color:#fff;font-size:18px;margin-right:8px}.profile{padding:25px;text-align:center}.bigavatar{width:90px;height:90px;margin:auto;border-radius:50%;background:#dcefe4;color:#16834b;display:grid;place-items:center;font-size:32px;font-weight:700}
-  </style>
-</head>
-<body>
-<div class="app">
-  <section id="auth" class="screen">
-    <div class="welcome">
-      <div class="logo">💬</div>
-      <h1>Jules Enock Messenger</h1>
-      <p class="muted">Une messagerie simple, rapide et moderne.</p>
-      <div id="loginBox">
-        <div class="field"><label>Téléphone ou e-mail</label><input id="loginId" placeholder="Votre identifiant"></div>
-        <div class="field"><label>Mot de passe</label><input id="loginPass" type="password" placeholder="Mot de passe"></div>
-        <button class="btn" onclick="login()">Se connecter</button>
-        <button class="btn alt" onclick="showRegister()">Créer un compte</button>
-      </div>
-      <div id="registerBox" class="hidden">
-        <div class="field"><label>Prénom</label><input id="first" placeholder="Prénom"></div>
-        <div class="field"><label>Nom</label><input id="last" placeholder="Nom"></div>
-        <div class="field"><label>Téléphone</label><input id="phone" placeholder="+509 ..."></div>
-        <div class="field"><label>Mot de passe</label><input id="pass" type="password" placeholder="Mot de passe"></div>
-        <button class="btn" onclick="register()">Créer mon compte</button>
-        <button class="btn alt" onclick="showLogin()">J'ai déjà un compte</button>
-      </div>
-    </div>
-  </section>
-
-  <section id="home" class="hidden">
-    <header class="top"><div class="brand">💬 Jules Enock Messenger</div><div class="sub">Vos conversations</div></header>
-    <main class="screen">
-      <div class="search"><input id="search" placeholder="🔍 Rechercher une conversation" oninput="renderChats()"></div>
-      <div id="chatList"></div>
-    </main>
-    <nav class="nav"><button class="active">💬<br>Messages</button><button onclick="profile()">👤<br>Profil</button><button onclick="logout()">↪<br>Quitter</button></nav>
-  </section>
-
-  <section id="chatView" class="hidden">
-    <header class="top"><div class="row"><button class="back" onclick="closeChat()">‹</button><div><div id="chatName" class="brand"></div><div class="sub">Conversation</div></div></div></header>
-    <div id="messages" class="conversation"></div>
-    <div class="composer"><input id="messageInput" placeholder="Écrire un message..." onkeydown="if(event.key==='Enter')sendMessage()"><button class="send" onclick="sendMessage()">➤</button></div>
-  </section>
-
-  <section id="profileView" class="hidden">
-    <header class="top"><div class="brand">Mon profil</div></header>
-    <div class="profile"><div id="bigAvatar" class="bigavatar"></div><h2 id="profileName"></h2><p id="profilePhone" class="muted"></p><button class="btn alt" onclick="closeProfile()">Retour aux messages</button></div>
-  </section>
-</div>
-
-<script>
-const demoChats=[
- {id:1,name:"Marie",last:"Bonjour ! Comment vas-tu ?",time:"10:24",msgs:[["Bonjour ! Comment vas-tu ?","theirs"],["Je vais bien, merci !","mine"]]},
- {id:2,name:"Jean",last:"À bientôt.",time:"Hier",msgs:[["Salut Jules 👋","theirs"],["Salut Jean !","mine"],["À bientôt.","theirs"]]},
- {id:3,name:"Groupe IMDS",last:"Bienvenue dans le groupe.",time:"Lun",msgs:[["Bienvenue dans le groupe IMDS.","theirs"]]}
-];
-let current=null;
-function $(id){return document.getElementById(id)}
-function show(id){["auth","home","chatView","profileView"].forEach(x=>$(x).classList.add("hidden"));$(id).classList.remove("hidden")}
-function showRegister(){$("loginBox").classList.add("hidden");$("registerBox").classList.remove("hidden")}
-function showLogin(){$("registerBox").classList.add("hidden");$("loginBox").classList.remove("hidden")}
-function register(){
- const first=$("first").value.trim(),last=$("last").value.trim(),phone=$("phone").value.trim(),pass=$("pass").value;
- if(!first||!last||!phone||!pass){alert("Remplissez tous les champs.");return}
- const user={first,last,phone,pass};localStorage.setItem("jem_user",JSON.stringify(user));localStorage.setItem("jem_session","1");openApp();
-}
-function login(){
- const user=JSON.parse(localStorage.getItem("jem_user")||"null");
- if(!user){alert("Aucun compte local. Créez d'abord un compte.");return}
- if($("loginId").value.trim()!==user.phone || $("loginPass").value!==user.pass){alert("Identifiant ou mot de passe incorrect.");return}
- localStorage.setItem("jem_session","1");openApp();
-}
-function openApp(){show("home");renderChats()}
-function logout(){localStorage.removeItem("jem_session");show("auth");showLogin()}
-function renderChats(){
- const q=($("search").value||"").toLowerCase();$("chatList").innerHTML="";
- demoChats.filter(c=>c.name.toLowerCase().includes(q)||c.last.toLowerCase().includes(q)).forEach(c=>{
-  const d=document.createElement("div");d.className="chat";d.onclick=()=>openChat(c.id);
-  d.innerHTML='<div class="avatar">'+c.name[0]+'</div><div class="info"><div class="name">'+c.name+'</div><div class="last">'+c.last+'</div></div><div class="time">'+c.time+'</div>';$("chatList").appendChild(d);
- });
-}
-function openChat(id){current=demoChats.find(c=>c.id===id);$("chatName").textContent=current.name;renderMessages();show("chatView")}
-function renderMessages(){const box=$("messages");box.innerHTML="";current.msgs.forEach(m=>{const d=document.createElement("div");d.className="bubble "+m[1];d.textContent=m[0];box.appendChild(d)});box.scrollTop=box.scrollHeight}
-function sendMessage(){const i=$("messageInput"),t=i.value.trim();if(!t)return;current.msgs.push([t,"mine"]);current.last=t;current.time="Maintenant";i.value="";renderMessages()}
-function closeChat(){show("home");renderChats()}
-function profile(){const u=JSON.parse(localStorage.getItem("jem_user")||"{}");$("profileName").textContent=(u.first||"")+" "+(u.last||"");$("profilePhone").textContent=u.phone||"";$("bigAvatar").textContent=(u.first||"J")[0];show("profileView")}
-function closeProfile(){show("home")}
-if(localStorage.getItem("jem_session"))openApp();
-</script>
-</body>
-</html>
+<!doctype html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#168a4a"><link rel="manifest" href="manifest.json"><title>Jules Enock Messenger</title><style>*{box-sizing:border-box}body{margin:0;font-family:Arial;background:#f4f7f5;color:#18231d}header{background:#168a4a;color:#fff;padding:16px;font-size:20px;font-weight:bold}main{max-width:650px;margin:auto;padding:16px}.card{background:#fff;border-radius:16px;padding:18px;margin:12px 0;box-shadow:0 3px 14px #0001}input,button{width:100%;padding:13px;margin:6px 0;border-radius:10px;border:1px solid #ccd5cf;font-size:16px}button{background:#168a4a;color:#fff;border:0;font-weight:bold}.secondary{background:#e9f1ec;color:#17633b}.danger{background:#b3261e}.hidden{display:none}.muted{color:#68756d;font-size:14px}.tabs{display:flex;gap:8px}.tabs button{flex:1}.user{padding:12px;border-bottom:1px solid #eee;cursor:pointer}.chat{height:55vh;overflow:auto;background:#eef4f0;border-radius:12px;padding:10px}.msg{max-width:78%;padding:9px 12px;border-radius:14px;margin:7px 0;background:#fff}.mine{margin-left:auto;background:#d6f2df}.row{display:flex;gap:8px}.row input{flex:1}.row button{width:auto;padding:0 18px}</style></head><body><header>Jules Enock Messenger</header><main>
+<section id="auth"><div class="card"><h2>Créer un compte</h2><input id="regFirst" placeholder="Prénom"><input id="regLast" placeholder="Nom"><input id="regEmail" type="email" placeholder="Email"><input id="regPass" type="password" placeholder="Mot de passe (6 caractères minimum)"><button id="registerBtn">S'inscrire</button></div><div class="card"><h2>Se connecter</h2><input id="loginEmail" type="email" placeholder="Email"><input id="loginPass" type="password" placeholder="Mot de passe"><button id="loginBtn">Connexion</button><p id="authMsg" class="muted"></p></div></section>
+<section id="app" class="hidden"><div class="tabs"><button id="searchTab">Rechercher</button><button id="profileTab" class="secondary">Profil</button><button id="logoutBtn" class="danger">Déconnexion</button></div><div id="searchPanel" class="card"><h2>Nouvelle conversation</h2><input id="searchEmail" type="email" placeholder="Email exact de l'utilisateur"><button id="searchBtn">Rechercher</button><div id="users"></div></div><div id="profilePanel" class="card hidden"><h2>Mon profil</h2><p id="profileText"></p></div><div id="chatPanel" class="card hidden"><button id="backBtn" class="secondary">← Retour</button><h2 id="chatTitle">Conversation</h2><div id="chat" class="chat"></div><div class="row"><input id="messageInput" placeholder="Écrire un message..."><button id="sendBtn">Envoyer</button></div></div></section></main>
+<script type="module">
+import{initializeApp}from"https://www.gstatic.com/firebasejs/12.2.1/firebase-app.js";
+import{getAuth,createUserWithEmailAndPassword,signInWithEmailAndPassword,onAuthStateChanged,signOut}from"https://www.gstatic.com/firebasejs/12.2.1/firebase-auth.js";
+import{getFirestore,doc,setDoc,getDoc,collection,query,where,getDocs,addDoc,onSnapshot,orderBy,serverTimestamp}from"https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js";
+const firebaseConfig={apiKey:"AIzaSyDEGccc-8c4gUTdv7iz4kZSU8kqpT0KqDs",authDomain:"jules-enock-messenger.firebaseapp.com",projectId:"jules-enock-messenger",storageBucket:"jules-enock-messenger.firebasestorage.app",messagingSenderId:"290311206198",appId:"1:290311206198:web:48983af157801ad734ef97",measurementId:"G-B88PM4ETMY"};
+const app=initializeApp(firebaseConfig),auth=getAuth(app),db=getFirestore(app);const $=id=>document.getElementById(id);let currentUser=null,unsub=null,conversation=null;
+function show(id,x){$(id).classList.toggle("hidden",!x)}
+$("registerBtn").onclick=async()=>{try{let f=$("regFirst").value.trim(),l=$("regLast").value.trim(),e=$("regEmail").value.trim().toLowerCase(),p=$("regPass").value;if(!f||!l||!e||p.length<6){$("authMsg").textContent="Remplis tous les champs. Mot de passe: 6 caractères minimum.";return}let c=await createUserWithEmailAndPassword(auth,e,p);await setDoc(doc(db,"users",c.user.uid),{firstName:f,lastName:l,email:e,createdAt:serverTimestamp()});}catch(e){$("authMsg").textContent=e.message}};
+$("loginBtn").onclick=async()=>{try{await signInWithEmailAndPassword(auth,$("loginEmail").value.trim().toLowerCase(),$("loginPass").value);$("authMsg").textContent=""}catch(e){$("authMsg").textContent=e.message}};
+$("logoutBtn").onclick=()=>signOut(auth);
+onAuthStateChanged(auth,async u=>{currentUser=u;show("auth",!u);show("app",!!u);if(u){let s=await getDoc(doc(db,"users",u.uid)),d=s.exists()?s.data():{};$("profileText").innerHTML="<b>"+(d.firstName||"")+" "+(d.lastName||"")+"</b><br>"+u.email}});
+$("searchTab").onclick=()=>{show("searchPanel",1);show("profilePanel",0);show("chatPanel",0)};
+$("profileTab").onclick=()=>{show("searchPanel",0);show("profilePanel",1);show("chatPanel",0)};
+$("searchBtn").onclick=async()=>{let e=$("searchEmail").value.trim().toLowerCase();$("users").innerHTML="";if(!e)return;let s=await getDocs(query(collection(db,"users"),where("email","==",e)));if(s.empty){$("users").innerHTML='<p class="muted">Aucun utilisateur trouvé.</p>';return}s.forEach(d=>{if(d.id===currentUser.uid)return;let x=d.data(),el=document.createElement("div");el.className="user";el.textContent=(x.firstName||"")+" "+(x.lastName||"")+" — "+x.email;el.onclick=()=>openChat(d.id,x);$("users").appendChild(el)})};
+async function openChat(uid,other){let ids=[currentUser.uid,uid].sort();conversation=ids.join("_");let cr=doc(db,"conversations",conversation),c=await getDoc(cr);if(!c.exists())await setDoc(cr,{members:ids,createdAt:serverTimestamp(),updatedAt:serverTimestamp(),lastMessage:""});$("chatTitle").textContent=(other.firstName||"")+" "+(other.lastName||"");show("searchPanel",0);show("profilePanel",0);show("chatPanel",1);if(unsub)unsub();unsub=onSnapshot(query(collection(db,"conversations",conversation,"messages"),orderBy("createdAt","asc")),s=>{$("chat").innerHTML="";s.forEach(d=>{let m=d.data(),el=document.createElement("div");el.className="msg"+(m.senderId===currentUser.uid?" mine":"");el.textContent=m.text||"";$("chat").appendChild(el)});$("chat").scrollTop=$("chat").scrollHeight})}
+$("backBtn").onclick=()=>{if(unsub)unsub();show("chatPanel",0);show("searchPanel",1)};
+$("sendBtn").onclick=send;$("messageInput").onkeydown=e=>{if(e.key==="Enter")send()};
+async function send(){let t=$("messageInput").value.trim();if(!t||!conversation)return;$("messageInput").value="";await addDoc(collection(db,"conversations",conversation,"messages"),{senderId:currentUser.uid,text:t,createdAt:serverTimestamp()});await setDoc(doc(db,"conversations",conversation),{lastMessage:t,updatedAt:serverTimestamp()},{merge:true})}
+</script></body></html>
