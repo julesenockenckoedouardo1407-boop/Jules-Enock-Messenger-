@@ -1,1 +1,1 @@
-Jules Enock Messenger v2.0 Firebase. Remplacer les fichiers de l'ancienne version par ceux-ci. Authentication Email/Mot de passe et Firestore doivent être activés.
+Jules Enock Messenger v2.1 Firebase — correction de la conversation et de la zone de message.
