@@ -18,9 +18,61 @@ $("logoutBtn").onclick=()=>signOut(auth);
 onAuthStateChanged(auth,async u=>{currentUser=u;show("auth",!u);show("app",!!u);if(u){let s=await getDoc(doc(db,"users",u.uid)),d=s.exists()?s.data():{};$("profileText").innerHTML="<b>"+(d.firstName||"")+" "+(d.lastName||"")+"</b><br>"+u.email}});
 $("searchTab").onclick=()=>{show("searchPanel",1);show("profilePanel",0);show("chatPanel",0)};
 $("profileTab").onclick=()=>{show("searchPanel",0);show("profilePanel",1);show("chatPanel",0)};
-$("searchBtn").onclick=async()=>{let term=$("searchEmail").value.trim().toLowerCase();$("users").innerHTML="";if(!term)return;let snap=await getDocs(query(collection(db,"users"),where("email","==",term)));if(snap.empty){$("users").innerHTML='<p class="muted">Aucun utilisateur trouvé.</p>';return}snap.forEach(d=>{if(d.id===currentUser.uid)return;let x=d.data(),el=document.createElement("div");el.className="user";el.innerHTML="<b>"+(x.firstName||"")+" "+(x.lastName||"")+"</b><br><span class='muted'>"+x.email+"</span>";el.onclick=()=>openConversation(d.id,x);$("users").appendChild(el)})};
-async function openConversation(otherUid,other){let members=[currentUser.uid,otherUid].sort();currentConversation=members.join("_");try{let cr=doc(db,"conversations",currentConversation),cs=await getDoc(cr);if(!cs.exists())await setDoc(cr,{members,createdAt:serverTimestamp(),updatedAt:serverTimestamp(),lastMessage:""});$("chatTitle").textContent=(other.firstName||"")+" "+(other.lastName||"");show("searchPanel",0);show("profilePanel",0);show("chatPanel",1);$("chat").innerHTML='<p class="muted">Chargement...</p>';if(unsubscribe)unsubscribe();let mq=query(collection(db,"conversations",currentConversation,"messages"),orderBy("createdAt","asc"));unsubscribe=onSnapshot(mq,snap=>{$("chat").innerHTML="";if(snap.empty){$("chat").innerHTML='<p class="muted">Aucun message. Écris le premier message 👋</p>';return}snap.forEach(ds=>{let m=ds.data(),el=document.createElement("div");el.className="msg"+(m.senderId===currentUser.uid?" mine":"");el.textContent=m.text||"";$("chat").appendChild(el)});$("chat").scrollTop=$("chat").scrollHeight},err=>{$("chat").innerHTML='<p class="muted">Erreur de lecture des messages : '+err.message+'</p>'})}catch(err){alert("Impossible d'ouvrir la conversation : "+err.message)}}
-$("backBtn").onclick=()=>{if(unsubscribe)unsubscribe();currentConversation=null;show("chatPanel",0);show("searchPanel",1)};
+$("searchBtn").onclick=async()=>{let term=$("searchEmail").value.trim().toLowerCase();$("users").innerHTML="";if(!term)return;let snap=await getDocs(query(collection(db,"users"),where("email","==",term)));if(snap.empty){$("users").innerHTML='<p class="muted">Aucun utilisateur trouvé.</p>';return}snap.forEach(d=>{if(d.id===currentUser.uid)return;let x=d.data(),el=document.createElement("div");el.className="user";el.innerHTML="<b>"+(x.firstName||"")+" "+(x.lastName||"")+"</b><br><span class='muted'>"+x.email+"</span>";el.onclick=()=>openConversation(d.id,x);$("users").appendChild(el)})}async function openConversation(otherUid,other){
+  let members=[currentUser.uid,otherUid].sort();
+  currentConversation=members.join("_");
+
+  try{
+    let cr=doc(db,"conversations",currentConversation);
+
+    await setDoc(cr,{
+      members:members,
+      createdAt:serverTimestamp(),
+      updatedAt:serverTimestamp(),
+      lastMessage:""
+    },{merge:true});
+
+    $("chatTitle").textContent=(other.firstName||"")+" "+(other.lastName||"");
+
+    show("searchPanel",0);
+    show("profilePanel",0);
+    show("chatPanel",1);
+
+    $("chat").innerHTML='<p class="muted">Chargement...</p>';
+
+    if(unsubscribe) unsubscribe();
+
+    let mq=query(
+      collection(db,"conversations",currentConversation,"messages"),
+      orderBy("createdAt","asc")
+    );
+
+    unsubscribe=onSnapshot(mq,snap=>{
+      $("chat").innerHTML="";
+
+      if(snap.empty){
+        $("chat").innerHTML='<p class="muted">Aucun message. Écris le premier message 👋</p>';
+        return;
+      }
+
+      snap.forEach(ds=>{
+        let m=ds.data();
+        let el=document.createElement("div");
+        el.className="msg"+(m.senderId===currentUser.uid?" mine":"");
+        el.textContent=m.text||"";
+        $("chat").appendChild(el);
+      });
+
+      $("chat").scrollTop=$("chat").scrollHeight;
+    },err=>{
+      $("chat").innerHTML=
+        '<p class="muted">Erreur de lecture des messages : '+err.message+'</p>';
+    });
+
+  }catch(err){
+    alert("Impossible d'ouvrir la conversation : "+err.message);
+  }
+  }
 $("sendBtn").onclick=sendMessage;$("messageInput").onkeydown=e=>{if(e.key==="Enter"){e.preventDefault();sendMessage()}};
 async function sendMessage(){let text=$("messageInput").value.trim();if(!text||!currentConversation||!currentUser)return;try{$("messageInput").value="";await addDoc(collection(db,"conversations",currentConversation,"messages"),{senderId:currentUser.uid,text,createdAt:serverTimestamp()});await setDoc(doc(db,"conversations",currentConversation),{lastMessage:text,updatedAt:serverTimestamp()},{merge:true})}catch(err){alert("Impossible d'envoyer le message : "+err.message)}}
 </script></body></html>
