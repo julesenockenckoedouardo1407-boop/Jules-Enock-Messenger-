@@ -1,78 +1,195 @@
-<!doctype html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#168a4a"><link rel="manifest" href="manifest.json"><title>Jules Enock Messenger</title><style>
-*{box-sizing:border-box}body{margin:0;font-family:Arial;background:#f4f7f5;color:#18231d}header{background:#168a4a;color:#fff;padding:16px;font-size:20px;font-weight:bold}main{max-width:650px;margin:auto;padding:14px}.card{background:#fff;border-radius:16px;padding:16px;margin:12px 0;box-shadow:0 3px 14px #0001}input,button{width:100%;padding:13px;margin:6px 0;border-radius:10px;border:1px solid #ccd5cf;font-size:16px}button{background:#168a4a;color:#fff;border:0;font-weight:bold}.secondary{background:#e9f1ec;color:#17633b}.danger{background:#b3261e}.hidden{display:none}.muted{color:#68756d;font-size:14px}.tabs{display:flex;gap:7px}.tabs button{flex:1}.user{padding:14px;border-bottom:1px solid #eee;cursor:pointer}.chat{height:52vh;overflow:auto;background:#eef4f0;border-radius:12px;padding:10px}.msg{max-width:80%;padding:10px 13px;border-radius:15px;margin:7px 0;background:#fff;word-wrap:break-word}.mine{margin-left:auto;background:#d6f2df}.row{display:flex;gap:7px}.row input{flex:1}.row button{width:auto;padding:0 18px}.chathead{display:flex;align-items:center;gap:8px}.chathead button{width:auto;margin:0;padding:9px 12px}</style></head><body><header>Jules Enock Messenger</header><main>
-<section id="auth"><div class="card"><h2>Créer un compte</h2><input id="regFirst" placeholder="Prénom"><input id="regLast" placeholder="Nom"><input id="regEmail" type="email" placeholder="Email"><input id="regPass" type="password" placeholder="Mot de passe (6 caractères minimum)"><button id="registerBtn">S'inscrire</button></div><div class="card"><h2>Se connecter</h2><input id="loginEmail" type="email" placeholder="Email"><input id="loginPass" type="password" placeholder="Mot de passe"><button id="loginBtn">Connexion</button><p id="authMsg" class="muted"></p></div></section>
-<section id="app" class="hidden"><div class="tabs"><button id="searchTab">Recherche</button><button id="profileTab" class="secondary">Profil</button><button id="logoutBtn" class="danger">Déconnexion</button></div>
-<div id="searchPanel" class="card"><h2>Nouvelle conversation</h2><input id="searchEmail" placeholder="Email / nom d'utilisateur"><button id="searchBtn">Rechercher</button><div id="users"></div></div>
-<div id="profilePanel" class="card hidden"><h2>Mon profil</h2><p id="profileText"></p></div>
-<div id="chatPanel" class="card hidden"><div class="chathead"><button id="backBtn" class="secondary">← Retour</button><h2 id="chatTitle">Conversation</h2></div><div id="chat" class="chat"></div><div class="row"><input id="messageInput" placeholder="Écrire un message..."><button id="sendBtn">Envoyer</button></div></div></section></main>
-<script type="module">
-import{initializeApp}from"https://www.gstatic.com/firebasejs/12.2.1/firebase-app.js";
-import{getAuth,createUserWithEmailAndPassword,signInWithEmailAndPassword,onAuthStateChanged,signOut}from"https://www.gstatic.com/firebasejs/12.2.1/firebase-auth.js";
-import{getFirestore,doc,setDoc,getDoc,collection,query,where,getDocs,addDoc,onSnapshot,orderBy,serverTimestamp}from"https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js";
-const firebaseConfig={apiKey:"AIzaSyDEGccc-8c4gUTdv7iz4kZSU8kqpT0KqDs",authDomain:"jules-enock-messenger.firebaseapp.com",projectId:"jules-enock-messenger",storageBucket:"jules-enock-messenger.firebasestorage.app",messagingSenderId:"290311206198",appId:"1:290311206198:web:48983af157801ad734ef97",measurementId:"G-B88PM4ETMY"};
-const app=initializeApp(firebaseConfig),auth=getAuth(app),db=getFirestore(app),$=id=>document.getElementById(id);let currentUser=null,currentConversation=null,unsubscribe=null;
-function show(id,yes){$(id).classList.toggle("hidden",!yes)}
-$("registerBtn").onclick=async()=>{try{let f=$("regFirst").value.trim(),l=$("regLast").value.trim(),e=$("regEmail").value.trim().toLowerCase(),p=$("regPass").value;if(!f||!l||!e||p.length<6){$("authMsg").textContent="Remplis tous les champs. Mot de passe : 6 caractères minimum.";return}let c=await createUserWithEmailAndPassword(auth,e,p);await setDoc(doc(db,"users",c.user.uid),{firstName:f,lastName:l,email:e,createdAt:serverTimestamp()})}catch(err){$("authMsg").textContent=err.message}};
-$("loginBtn").onclick=async()=>{try{await signInWithEmailAndPassword(auth,$("loginEmail").value.trim().toLowerCase(),$("loginPass").value);$("authMsg").textContent=""}catch(err){$("authMsg").textContent=err.message}};
-$("logoutBtn").onclick=()=>signOut(auth);
-onAuthStateChanged(auth,async u=>{currentUser=u;show("auth",!u);show("app",!!u);if(u){let s=await getDoc(doc(db,"users",u.uid)),d=s.exists()?s.data():{};$("profileText").innerHTML="<b>"+(d.firstName||"")+" "+(d.lastName||"")+"</b><br>"+u.email}});
-$("searchTab").onclick=()=>{show("searchPanel",1);show("profilePanel",0);show("chatPanel",0)};
-$("profileTab").onclick=()=>{show("searchPanel",0);show("profilePanel",1);show("chatPanel",0)};
-$("searchBtn").onclick=async()=>{let term=$("searchEmail").value.trim().toLowerCase();$("users").innerHTML="";if(!term)return;let snap=await getDocs(query(collection(db,"users"),where("email","==",term)));if(snap.empty){$("users").innerHTML='<p class="muted">Aucun utilisateur trouvé.</p>';return}snap.forEach(d=>{if(d.id===currentUser.uid)return;let x=d.data(),el=document.createElement("div");el.className="user";el.innerHTML="<b>"+(x.firstName||"")+" "+(x.lastName||"")+"</b><br><span class='muted'>"+x.email+"</span>";el.onclick=()=>openConversation(d.id,x);$("users").appendChild(el)})}async function openConversation(otherUid,other){
-  let members=[currentUser.uid,otherUid].sort();
-  currentConversation=members.join("_");
+  
+    <!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#168a4a">
+<link rel="manifest" href="manifest.json">
 
-  try{
-    let cr=doc(db,"conversations",currentConversation);
+<title>Jules Enock Messenger</title>
 
-    await setDoc(cr,{
-      members:members,
-      createdAt:serverTimestamp(),
-      updatedAt:serverTimestamp(),
-      lastMessage:""
-    },{merge:true});
+<style>
+*{box-sizing:border-box}
 
-    $("chatTitle").textContent=(other.firstName||"")+" "+(other.lastName||"");
+body{
+  margin:0;
+  font-family:Arial,sans-serif;
+  background:#f4f7f5;
+  color:#18231d
+}
 
-    show("searchPanel",0);
-    show("profilePanel",0);
-    show("chatPanel",1);
+header{
+  background:#168a4a;
+  color:white;
+  padding:16px;
+  font-size:20px;
+  font-weight:bold;
+  text-align:center
+}
 
-    $("chat").innerHTML='<p class="muted">Chargement...</p>';
+main{
+  max-width:650px;
+  margin:auto;
+  padding:14px
+}
 
-    if(unsubscribe) unsubscribe();
+.card{
+  background:white;
+  border-radius:16px;
+  padding:16px;
+  margin:12px 0;
+  box-shadow:0 3px 14px #0001
+}
 
-    let mq=query(
-      collection(db,"conversations",currentConversation,"messages"),
-      orderBy("createdAt","asc")
-    );
+input,button{
+  width:100%;
+  padding:13px;
+  margin:6px 0;
+  border-radius:10px;
+  border:1px solid #ccd5cf;
+  font-size:16px
+}
 
-    unsubscribe=onSnapshot(mq,snap=>{
-      $("chat").innerHTML="";
+button{
+  background:#168a4a;
+  color:white;
+  border:0;
+  font-weight:bold;
+  cursor:pointer
+}
 
-      if(snap.empty){
-        $("chat").innerHTML='<p class="muted">Aucun message. Écris le premier message 👋</p>';
-        return;
-      }
+.secondary{
+  background:#e9f1ec;
+  color:#17633b
+}
 
-      snap.forEach(ds=>{
-        let m=ds.data();
-        let el=document.createElement("div");
-        el.className="msg"+(m.senderId===currentUser.uid?" mine":"");
-        el.textContent=m.text||"";
-        $("chat").appendChild(el);
-      });
+.danger{
+  background:#b3261e
+}
 
-      $("chat").scrollTop=$("chat").scrollHeight;
-    },err=>{
-      $("chat").innerHTML=
-        '<p class="muted">Erreur de lecture des messages : '+err.message+'</p>';
-    });
+.hidden{
+  display:none!important
+}
 
-  }catch(err){
-    alert("Impossible d'ouvrir la conversation : "+err.message);
-  }
-  }
-$("sendBtn").onclick=sendMessage;$("messageInput").onkeydown=e=>{if(e.key==="Enter"){e.preventDefault();sendMessage()}};
-async function sendMessage(){let text=$("messageInput").value.trim();if(!text||!currentConversation||!currentUser)return;try{$("messageInput").value="";await addDoc(collection(db,"conversations",currentConversation,"messages"),{senderId:currentUser.uid,text,createdAt:serverTimestamp()});await setDoc(doc(db,"conversations",currentConversation),{lastMessage:text,updatedAt:serverTimestamp()},{merge:true})}catch(err){alert("Impossible d'envoyer le message : "+err.message)}}
-</script></body></html>
+.muted{
+  color:#68756d;
+  font-size:14px
+}
+
+.tabs{
+  display:flex;
+  gap:7px
+}
+
+.tabs button{
+  flex:1
+}
+
+.user{
+  padding:14px;
+  border-bottom:1px solid #eee;
+  cursor:pointer
+}
+
+.user:hover{
+  background:#f1f7f3
+}
+
+.chat{
+  height:52vh;
+  overflow:auto;
+  background:#eef4f0;
+  border-radius:12px;
+  padding:10px
+}
+
+.msg{
+  max-width:80%;
+  padding:10px 13px;
+  border-radius:15px;
+  margin:7px 0;
+  background:white;
+  word-wrap:break-word
+}
+
+.mine{
+  margin-left:auto;
+  background:#d6f2df
+}
+
+.row{
+  display:flex;
+  gap:7px
+}
+
+.row input{
+  flex:1
+}
+
+.row button{
+  width:auto;
+  padding:0 18px
+}
+
+.chathead{
+  display:flex;
+  align-items:center;
+  gap:8px
+}
+
+.chathead button{
+  width:auto;
+  margin:0;
+  padding:9px 12px
+}
+
+.error{
+  color:#b3261e;
+  font-size:14px;
+  margin-top:8px
+}
+</style>
+</head>
+
+<body>
+
+<header>
+Jules Enock Messenger
+</header>
+
+<main>
+
+<!-- AUTHENTIFICATION -->
+<section id="auth">
+
+<div class="card">
+<h2>Créer un compte</h2>
+
+<input id="regFirst" placeholder="Prénom">
+<input id="regLast" placeholder="Nom">
+<input id="regEmail" type="email" placeholder="Email">
+<input id="regPass" type="password" placeholder="Mot de passe (6 caractères minimum)">
+
+<button id="registerBtn">S'inscrire</button>
+
+</div>
+
+<div class="card">
+
+<h2>Se connecter</h2>
+
+<input id="loginEmail" type="email" placeholder="Email">
+<input id="loginPass" type="password" placeholder="Mot de passe">
+
+<button id="loginBtn">Connexion</button>
+
+<p id="authMsg" class="muted"></p>
+
+</div>
+
+</section>
+
+
+<!-- APPLICATION -->
+<section
